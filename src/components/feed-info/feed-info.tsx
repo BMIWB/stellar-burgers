@@ -1,18 +1,19 @@
 import { FC } from 'react';
+import { useSelector } from '../../services/store';
 
 import { TOrder } from '@utils-types';
 import { FeedInfoUI } from '../ui/feed-info';
+import { selectOrdersState } from '../../services/selectors/ordersSelectors';
+import { MAX_ORDERS_TO_SHOW } from '../../utils/constants';
 
 const getOrders = (orders: TOrder[], status: string): number[] =>
   orders
-    .filter((item) => item.status === status)
-    .map((item) => item.number)
-    .slice(0, 20);
+    .filter((order) => order.status === status)
+    .map((order) => order.number)
+    .slice(0, MAX_ORDERS_TO_SHOW);
 
 export const FeedInfo: FC = () => {
-  /** TODO: взять переменные из стора */
-  const orders: TOrder[] = [];
-  const feed = {};
+  const { orders, total, totalToday } = useSelector(selectOrdersState);
 
   const readyOrders = getOrders(orders, 'done');
 
@@ -22,7 +23,7 @@ export const FeedInfo: FC = () => {
     <FeedInfoUI
       readyOrders={readyOrders}
       pendingOrders={pendingOrders}
-      feed={feed}
+      feed={{ orders, total, totalToday }}
     />
   );
 };
