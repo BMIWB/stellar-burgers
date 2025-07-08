@@ -1,10 +1,24 @@
 import { ProfileOrdersUI } from '@ui-pages';
-import { TOrder } from '@utils-types';
-import { FC } from 'react';
+import { FC, useEffect } from 'react';
+import { useDispatch, useSelector } from '../../services/store';
+import { selectUserOrders } from '../../services/selectors/ordersSelectors';
+import {
+  selectUser,
+  selectIsAuthChecked
+} from '../../services/selectors/userSelectors';
+import { fetchUserOrders } from '../../services/slices/ordersSlice';
 
 export const ProfileOrders: FC = () => {
-  /** TODO: взять переменную из стора */
-  const orders: TOrder[] = [];
+  const dispatch = useDispatch();
+  const userOrders = useSelector(selectUserOrders);
+  const user = useSelector(selectUser);
+  const isAuthChecked = useSelector(selectIsAuthChecked);
 
-  return <ProfileOrdersUI orders={orders} />;
+  useEffect(() => {
+    if (isAuthChecked && user) {
+      dispatch(fetchUserOrders());
+    }
+  }, [dispatch, isAuthChecked, user]);
+
+  return <ProfileOrdersUI orders={userOrders} />;
 };
