@@ -1,5 +1,4 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-
 import { TOrder } from '@utils-types';
 import {
   getFeedsApi,
@@ -8,10 +7,9 @@ import {
   getOrderByNumberApi
 } from '../../utils/burger-api';
 
-// Тип состояния
 export interface TOrdersState {
-  orders: TOrder[]; // Общая лента заказов
-  userOrders: TOrder[]; // Заказы пользователя
+  orders: TOrder[]; // для общей ленты заказов
+  userOrders: TOrder[]; // для заказов пользователя
   total: number;
   totalToday: number;
   currentOrder: TOrder | null;
@@ -19,7 +17,6 @@ export interface TOrdersState {
   error: string | null;
 }
 
-// Начальное состояние
 export const initialState: TOrdersState = {
   orders: [],
   userOrders: [],
@@ -30,10 +27,8 @@ export const initialState: TOrdersState = {
   error: null
 };
 
-// AsyncThunk: Получение общей ленты заказов
 export const fetchOrders = createAsyncThunk('orders/fetchOrders', getFeedsApi);
 
-// AsyncThunk: Получение заказов пользователя
 export const fetchUserOrders = createAsyncThunk(
   'orders/fetchUserOrders',
   async (_, { rejectWithValue }) => {
@@ -41,6 +36,7 @@ export const fetchUserOrders = createAsyncThunk(
       const result = await getOrdersApi();
       return result;
     } catch (error: unknown) {
+      console.error('fetchUserOrders: ошибка:', error);
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       return rejectWithValue(errorMessage);
@@ -48,7 +44,6 @@ export const fetchUserOrders = createAsyncThunk(
   }
 );
 
-// AsyncThunk: Получение заказа по номеру
 const FIRST_ORDER_INDEX = 0;
 
 export const fetchOrderByNumber = createAsyncThunk(
@@ -59,7 +54,6 @@ export const fetchOrderByNumber = createAsyncThunk(
   }
 );
 
-// AsyncThunk: Создание нового заказа
 export const createOrder = createAsyncThunk(
   'orders/createOrder',
   async (ingredientIds: string[]) => {
@@ -68,7 +62,6 @@ export const createOrder = createAsyncThunk(
   }
 );
 
-// Slice заказов
 const ordersSlice = createSlice({
   name: 'orders',
   initialState,
@@ -82,7 +75,6 @@ const ordersSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // fetchOrders
       .addCase(fetchOrders.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -97,8 +89,6 @@ const ordersSlice = createSlice({
         state.loading = false;
         state.error = action.error.message || 'Ошибка загрузки заказов';
       })
-
-      // fetchUserOrders
       .addCase(fetchUserOrders.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -111,8 +101,6 @@ const ordersSlice = createSlice({
         state.loading = false;
         state.error = action.error.message || 'Ошибка загрузки заказов';
       })
-
-      // fetchOrderByNumber
       .addCase(fetchOrderByNumber.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -125,8 +113,6 @@ const ordersSlice = createSlice({
         state.loading = false;
         state.error = action.error.message || 'Ошибка загрузки заказа';
       })
-
-      // createOrder
       .addCase(createOrder.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -134,6 +120,7 @@ const ordersSlice = createSlice({
       .addCase(createOrder.fulfilled, (state, action) => {
         state.loading = false;
         state.currentOrder = action.payload;
+        // Добавляем новый заказ в начало списка пользовательских заказов
         if (action.payload) {
           state.userOrders = [action.payload, ...state.userOrders];
         }

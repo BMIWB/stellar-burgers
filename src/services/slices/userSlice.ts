@@ -1,5 +1,4 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-
 import { TUser } from '@utils-types';
 import {
   getUserApi,
@@ -10,28 +9,23 @@ import {
   TLoginData,
   TRegisterData
 } from '../../utils/burger-api';
-
 import { setCookie, deleteCookie } from '../../utils/cookie';
 
-// Константы
 const HTTP_STATUS_UNAUTHORIZED = '401';
 const BEARER_PREFIX = 'Bearer ';
 
-// Тип состояния
 export interface TUserState {
   isAuthChecked: boolean;
   user: TUser | null;
   error: string | null;
 }
 
-// Начальное состояние
 export const initialState: TUserState = {
   isAuthChecked: false,
   user: null,
   error: null
 };
 
-// AsyncThunk: Проверка авторизации
 export const checkUserAuth = createAsyncThunk(
   'user/checkAuth',
   async (_, { rejectWithValue }) => {
@@ -39,49 +33,46 @@ export const checkUserAuth = createAsyncThunk(
       const response = await getUserApi();
       return response.user;
     } catch (error: unknown) {
+      // 401 ошибка - это нормально, пользователь просто не авторизован
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      if (errorMessage.includes(HTTP_STATUS_UNAUTHORIZED)) {
+      if (errorMessage?.includes(HTTP_STATUS_UNAUTHORIZED)) {
         return rejectWithValue('unauthorized');
       }
+      // Для других ошибок пробрасываем их дальше
       return rejectWithValue(errorMessage);
     }
   }
 );
 
-// AsyncThunk: Вход
 export const loginUser = createAsyncThunk(
   'user/login',
   async (loginData: TLoginData) => {
     const response = await loginUserApi(loginData);
+    // Убираем префикс "Bearer " из токена перед сохранением
     const cleanAccessToken = response.accessToken.startsWith(BEARER_PREFIX)
       ? response.accessToken.substring(BEARER_PREFIX.length)
       : response.accessToken;
-
     setCookie('accessToken', cleanAccessToken);
     localStorage.setItem('refreshToken', response.refreshToken);
-
     return response.user;
   }
 );
 
-// AsyncThunk: Регистрация
 export const registerUser = createAsyncThunk(
   'user/register',
   async (registerData: TRegisterData) => {
     const response = await registerUserApi(registerData);
+    // Убираем префикс "Bearer " из токена перед сохранением
     const cleanAccessToken = response.accessToken.startsWith(BEARER_PREFIX)
       ? response.accessToken.substring(BEARER_PREFIX.length)
       : response.accessToken;
-
     setCookie('accessToken', cleanAccessToken);
     localStorage.setItem('refreshToken', response.refreshToken);
-
     return response.user;
   }
 );
 
-// AsyncThunk: Обновление профиля
 export const updateUser = createAsyncThunk(
   'user/update',
   async (userData: Partial<TRegisterData>) => {
@@ -90,14 +81,12 @@ export const updateUser = createAsyncThunk(
   }
 );
 
-// AsyncThunk: Выход
 export const logoutUser = createAsyncThunk('user/logout', async () => {
   await logoutApi();
   deleteCookie('accessToken');
   localStorage.removeItem('refreshToken');
 });
 
-// Slice пользователя
 const userSlice = createSlice({
   name: 'user',
   initialState,
@@ -108,7 +97,6 @@ const userSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // checkUserAuth
       .addCase(checkUserAuth.pending, (state) => {
         state.error = null;
       })
@@ -116,12 +104,11 @@ const userSlice = createSlice({
         state.isAuthChecked = true;
         state.user = action.payload;
       })
-      .addCase(checkUserAuth.rejected, (state) => {
+      .addCase(checkUserAuth.rejected, (state, action) => {
         state.isAuthChecked = true;
+        // Не показываем ошибку для 401 - это нормальное состояние неавторизованного пользователя
         state.error = null;
       })
-
-      // loginUser
       .addCase(loginUser.pending, (state) => {
         state.error = null;
       })
@@ -132,8 +119,6 @@ const userSlice = createSlice({
       .addCase(loginUser.rejected, (state, action) => {
         state.error = action.error.message || 'Ошибка входа';
       })
-
-      // registerUser
       .addCase(registerUser.pending, (state) => {
         state.error = null;
       })
@@ -144,16 +129,12 @@ const userSlice = createSlice({
       .addCase(registerUser.rejected, (state, action) => {
         state.error = action.error.message || 'Ошибка регистрации';
       })
-
-      // updateUser
       .addCase(updateUser.fulfilled, (state, action) => {
         state.user = action.payload;
       })
       .addCase(updateUser.rejected, (state, action) => {
         state.error = action.error.message || 'Ошибка обновления профиля';
       })
-
-      // logoutUser
       .addCase(logoutUser.fulfilled, (state) => {
         state.user = null;
       });

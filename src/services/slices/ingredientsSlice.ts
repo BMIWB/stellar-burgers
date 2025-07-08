@@ -1,29 +1,24 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-
 import { TIngredient } from '@utils-types';
 import { getIngredientsApi } from '../../utils/burger-api';
 
-// Тип состояния
 export interface TIngredientsState {
   ingredients: TIngredient[];
   loading: boolean;
   error: string | null;
 }
 
-// Начальное состояние
 export const initialState: TIngredientsState = {
   ingredients: [],
   loading: false,
   error: null
 };
 
-// AsyncThunk для получения ингредиентов
 export const fetchIngredients = createAsyncThunk(
   'ingredients/fetchIngredients',
   getIngredientsApi
 );
 
-// Слайс ингредиентов
 const ingredientsSlice = createSlice({
   name: 'ingredients',
   initialState,
